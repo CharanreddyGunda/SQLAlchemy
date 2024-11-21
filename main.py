@@ -1,31 +1,62 @@
-from fastapi import Depends, FastAPI
-from typing import Annotated
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel
+from typing import Annotated, Optional
 from database import SessionLocal, create_db
-from sqlalchemy.orm import Session
-from dependency import db_dependency
 import models
-from curd import CompanyDetailsBase, create_company_details, get_company_details, get_company_details_by_id
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 
 # Call create_db() to create tables at startup
 create_db()
 
-@app.get("/")
-async def home():
-    return {"key": "welcome"}
+class EmployeeBase(BaseModel):
+    first_name: str
+    last_name: str
+    gender: Optional[str] =None
+    age: Optional[str] = None
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+db_dependency = Annotated[Session, Depends(get_db)]
+
+@app.post("/api/employee/add")
+async def register_user(emp: EmployeeBase, db: db_dependency):
+    db_emp = models.Employee(first_name=emp.first_name, last_name=emp.last_name, gender=emp.gender, age=emp.age)
+    db.add(db_emp)
+    db.commit()
+    db.refresh(db_emp)
+    return {"id": db_emp.id, "first_name": db_emp.first_name, "last_name": db_emp.last_name}
 
 
-@app.post("/api/companydetails")
-async def add_company(comp : CompanyDetailsBase, db: db_dependency):
-    return create_company_details(company=comp,db=db)
+@app.get("/api/employee/get")
+async def get_all_users(db:db_dependency):
+    employees = db.query(models.Employee).all()
+    return employees
 
+@app.delete("/api/employee/{emp_id}")
+async def delete_employee(emp_id: int, db: db_dependency):
+    db_emp = db.query(models.Employee).filter(models.Employee.id == emp_id).first()
+    if db_emp is None:
+        raise HTTPException(status_code=404, detail=f"employee not found with id: '{emp_id}'")
+    db.delete(db_emp)
+    db.commit()
+    return {"detail": "Employee deleted successfully"}
 
-@app.get("/api/companydetails/get")
-async def get_company(db: db_dependency):
-    return get_company_details(db=db)
-
-
-@app.get("/api/companydetails/get/{company_id}")
-async def get_company(company_id: int, db: db_dependency):
-    return get_company_details_by_id()
+@app.put("/api/employee/update")
+async def update_employee(emp_id:int, emp : EmployeeBase, db: db_dependency):
+    db_emp = db.query(models.Employee).filter(models.Employee.id == emp_id).first()
+    if db_emp is None:
+        raise HTTPException(status_code=404, detail=f"employee not found with id: '{emp_id}'")
+    db_emp.first_name = emp.first_name
+    db_emp.last_name = emp.last_name
+    db_emp.gender = emp.gender
+    db_emp.age = emp.age
+    db.commit()
+    db.refresh(db_emp)
+    return db_emp

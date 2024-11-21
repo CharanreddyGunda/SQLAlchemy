@@ -1,15 +1,15 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from config import settings
 
-# DATABASE_URL = "postgresql://postgres:root@localhost:5433/postgres"
+DATABASE_URL = "postgresql://postgres:root@localhost:5050/fast_api"
+# 'mysql+pymysql://root:cherry007@localhost:3306/fast_api'
 
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(DATABASE_URL, connect_args={"charset": "utf8mb4"})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-#creates the tables in database
+# Create the tables in the database
 def create_db():
-    Base.metadata.create_all(bind = engine)
+    Base.metadata.create_all(bind=engine)

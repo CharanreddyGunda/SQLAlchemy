@@ -1,14 +1,11 @@
-from sqlalchemy import Integer, Column, String
+from sqlalchemy import Column, String, Integer
 from database import Base
 
-class CompanyDetails(Base):
-    __tablename__ = 'company_details'
+class Employee(Base):
+    __tablename__ = 'Employee'
 
     id = Column(Integer, primary_key=True, index=True)
-    company_name = Column(String(255), index=True)
-    website = Column(String(255), index=True)
-    job_type = Column(String, index = True)
-    company_type = Column(String, index =True)
-    company_size = Column(Integer)
-    linkedin_url = Column(String, index=True)
-
+    first_name = Column(String(255), index=True)  # Specify length for VARCHAR
+    last_name = Column(String(255), index=True)   # Specify length for VARCHAR
+    gender = Column(String(50), index=True)       # Specify length for VARCHAR
+    age = Column(Integer)
